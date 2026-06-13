@@ -1,5 +1,17 @@
 # rawblock-io
 
+[![PyPI version](https://img.shields.io/pypi/v/rawblock-io)](https://pypi.org/project/rawblock-io/)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/)
+[![License](https://img.shields.io/github/license/MBanucu/rawblock-io)](LICENSE)
+[![OS](https://img.shields.io/badge/OS-Linux%20%7C%20macOS-blue)](https://github.com/MBanucu/rawblock-io)
+
+[![CI](https://img.shields.io/github/actions/workflow/status/MBanucu/rawblock-io/test.yml?branch=main)](https://github.com/MBanucu/rawblock-io/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/MBanucu/rawblock-io/branch/main/graph/badge.svg)](https://codecov.io/gh/MBanucu/rawblock-io)
+
+[![Downloads total](https://pepy.tech/badge/rawblock-io)](https://pepy.tech/project/rawblock-io)
+[![Downloads/month](https://pepy.tech/badge/rawblock-io/month)](https://pepy.tech/project/rawblock-io)
+[![Downloads/week](https://pepy.tech/badge/rawblock-io/week)](https://pepy.tech/project/rawblock-io)
+
 Raw block device I/O with automatic strategy fallback and cross-platform
 device/mount point resolution.
 
