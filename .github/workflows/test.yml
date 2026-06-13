@@ -39,30 +39,8 @@ jobs:
       - name: Run tests with coverage
         run: python -m coverage run -m unittest discover -s tests -v
 
-      - name: Dump _resolve coverage (debug)
-        run: |
-          python -m coverage json -o cov.json
-          python3 -c "
-          import json
-          with open('cov.json') as f:
-              data = json.load(f)
-          for fp, info in data.get('files', {}).items():
-              if '_resolve' in fp:
-                  s = info['summary']
-                  print(f'  {fp}: {s[\"percent_covered\"]:.0f}% ({s[\"covered_lines\"]}/{s[\"num_statements\"]})')
-                  print(f'  missing: {info.get(\"missing_lines\", [])}')
-                  print(f'  excluded: {info.get(\"excluded_lines\", [])}')
-          " || true
-
       - name: Report coverage
         run: python -m coverage report --fail-under=70 --skip-covered
-
-      - name: Upload .coverage artifact
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: dot-coverage-${{ matrix.os }}-${{ matrix.python-version }}
-          path: .coverage
-          include-hidden-files: true
 
       - name: Dump XML for Codecov
         run: python -m coverage xml -o coverage.xml
@@ -72,3 +50,10 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: false
+
+  result:
+    name: All tests
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All ${{ needs.test.result }}"
