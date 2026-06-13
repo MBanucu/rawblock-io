@@ -1,6 +1,7 @@
 """Unit tests for rawblock-io — no sudo, no loop devices required."""
 
 import os
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
@@ -18,6 +19,7 @@ from rawblock_io import (
     _try_pread,
     _try_pwrite,
 )
+from rawblock_io._resolve import _df_output
 
 
 class TestBlockAlign(unittest.TestCase):
@@ -267,6 +269,117 @@ class TestResolve(unittest.TestCase):
         except OSError:
             dev = None
         self.assertIsNone(dev)
+
+
+class TestDfOutput(unittest.TestCase):
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    def test_darwin_df_fails(self, mock_run):
+        mock_run.return_value.returncode = 1
+        self.assertIsNone(_df_output('/'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    def test_darwin_df_few_lines(self, mock_run):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = 'header\n'
+        self.assertIsNone(_df_output('/'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    def test_darwin_df_few_parts(self, mock_run):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = 'Filesystem  Size\n/dev/disk1 1G\n'
+        self.assertIsNone(_df_output('/'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    def test_darwin_df_stat_fails(self, mock_run):
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout=(
+                'Filesystem   512-blocks  Mounted on\n'
+                '/dev/disk1s1 489620264   /\n'
+            )),
+            MagicMock(returncode=1, stdout=''),
+        ]
+        result = _df_output('/')
+        self.assertEqual(result, ('/dev/disk1s1', '/', ''))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    def test_darwin_df_success(self, mock_run):
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout=(
+                'Filesystem   512-blocks  Mounted on\n'
+                '/dev/disk1s1 489620264   /\n'
+            )),
+            MagicMock(returncode=0, stdout='apfs\n'),
+        ]
+        result = _df_output('/')
+        self.assertEqual(result, ('/dev/disk1s1', '/', 'apfs'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    def test_linux_df_fails(self, mock_run):
+        mock_run.return_value.returncode = 1
+        self.assertIsNone(_df_output('/'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    def test_linux_df_few_lines(self, mock_run):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = 'header\n'
+        self.assertIsNone(_df_output('/'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    def test_linux_df_few_cols(self, mock_run):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = 'header\ncol1 col2\n'
+        self.assertIsNone(_df_output('/'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    def test_linux_df_success(self, mock_run):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = (
+            'fstype target source\n'
+            'ext4   /      /dev/sda1\n'
+        )
+        result = _df_output('/')
+        self.assertEqual(result, ('/dev/sda1', '/', 'ext4'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    def test_subprocess_file_not_found(self, mock_run):
+        mock_run.side_effect = FileNotFoundError
+        self.assertIsNone(_df_output('/'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    def test_subprocess_os_error(self, mock_run):
+        mock_run.side_effect = OSError
+        self.assertIsNone(_df_output('/'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    def test_subprocess_timeout(self, mock_run):
+        mock_run.side_effect = subprocess.TimeoutExpired(['df', '/'], 5)
+        self.assertIsNone(_df_output('/'))
+
+    @patch('rawblock_io._resolve.subprocess.run')
+    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    def test_darwin_subprocess_file_not_found(self, mock_run):
+        mock_run.side_effect = FileNotFoundError
+        self.assertIsNone(_df_output('/'))
+
+    def test_df_output_with_real_path(self):
+        result = _df_output('/')
+        self.assertIsNotNone(result)
+        dev, mp, fstype = result
+        self.assertIsInstance(dev, str)
+        self.assertIsInstance(mp, str)
+        self.assertIsInstance(fstype, str)
 
 
 if __name__ == '__main__':
