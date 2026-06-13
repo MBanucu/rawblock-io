@@ -60,8 +60,6 @@ jobs:
       - name: Set up coverage config
         run: |
           cat > .coveragerc << 'EOF'
-          [run]
-          source = rawblock_io
           [paths]
           source =
               /home/runner/work/rawblock-io/rawblock-io
