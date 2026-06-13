@@ -170,6 +170,7 @@ class TestDDStrategy(unittest.TestCase):
         mock_file = MagicMock()
         mock_file.name = '/tmp/dd_write_test'
         mock_tmpfile.return_value.__enter__.return_value = mock_file
+        mock_run.return_value.returncode = 0
         s = DDStrategy()
         result = s._write_blocks('/dev/loop0', 0, b'\x00' * 512)
         self.assertTrue(result)
@@ -196,6 +197,55 @@ class TestDDStrategy(unittest.TestCase):
         s = DDStrategy()
         result = s.write('/dev/loop0', 100, b'HELLO')
         self.assertFalse(result)
+
+    def test_read_real_file(self):
+        """Integration: dd reads from a regular file."""
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        tmp.write(b'\x00' * 512)
+        tmp.close()
+        try:
+            s = DDStrategy()
+            data = s.read(tmp.name, 0, 512)
+            self.assertIsNotNone(data)
+            self.assertEqual(len(data), 512)
+        finally:
+            os.unlink(tmp.name)
+
+    def test_write_aligned_real_file(self):
+        """Integration: dd writes to a regular file."""
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        tmp.write(b'\x00' * 1024)
+        tmp.close()
+        try:
+            s = DDStrategy()
+            ok = s.write(tmp.name, 512, b'\xFF' * 512)
+            self.assertTrue(ok)
+
+            with open(tmp.name, 'rb') as f:
+                before = f.read(512)
+                after = f.read(512)
+            self.assertEqual(before, b'\x00' * 512)
+            self.assertEqual(after, b'\xFF' * 512)
+        finally:
+            os.unlink(tmp.name)
+
+    def test_write_misaligned_real_file(self):
+        """Integration: dd read-modify-write on a regular file."""
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        tmp.write(b'\x00' * 1024)
+        tmp.close()
+        try:
+            s = DDStrategy()
+            ok = s.write(tmp.name, 100, b'HELLO')
+            self.assertTrue(ok)
+
+            with open(tmp.name, 'rb') as f:
+                data = f.read()
+            self.assertEqual(data[0:100], b'\x00' * 100)
+            self.assertEqual(data[100:105], b'HELLO')
+            self.assertEqual(data[105:512], b'\x00' * 407)
+        finally:
+            os.unlink(tmp.name)
 
 
 class TestResolve(unittest.TestCase):
