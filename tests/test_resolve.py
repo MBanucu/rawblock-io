@@ -1,6 +1,6 @@
 from unittest.mock import patch, MagicMock
 
-from rawblock_io import resolve_device, resolve_mount_point
+from rawblock_io import resolve_device, resolve_mount_point, resolve
 from rawblock_io._resolve import _df_output
 
 import rawblock_io
@@ -31,6 +31,33 @@ class TestResolve(unittest.TestCase):
         except OSError:
             dev = None
         self.assertIsNone(dev)
+
+
+class TestUnifiedResolve(unittest.TestCase):
+    def test_resolve_root_returns_tuple(self):
+        result = resolve('/')
+        self.assertIsNotNone(result)
+        dev, mp, fstype = result
+        self.assertIsInstance(dev, str)
+        self.assertGreater(len(dev), 0)
+        self.assertIsInstance(mp, str)
+        self.assertGreater(len(mp), 0)
+        self.assertIsInstance(fstype, str)
+
+    def test_resolve_tmp_returns_tuple(self):
+        result = resolve('/tmp')
+        self.assertIsNotNone(result)
+        dev, mp, fstype = result
+        self.assertGreater(len(dev), 0)
+        self.assertGreater(len(mp), 0)
+
+    @patch('rawblock_io._resolve.resolve_device', return_value=None)
+    def test_resolve_no_device_returns_none(self, _mock):
+        self.assertIsNone(resolve('/'))
+
+    @patch('rawblock_io._resolve.resolve_mount_point', return_value=None)
+    def test_resolve_no_mount_returns_none(self, _mock):
+        self.assertIsNone(resolve('/'))
 
 
 class TestResolveLinux(unittest.TestCase):

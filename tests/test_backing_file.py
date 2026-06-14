@@ -50,8 +50,8 @@ class TestBackingFileStrategy(unittest.TestCase):
         s = BackingFileStrategy()
         self.assertIsNone(s._resolve_linux('/dev/loop0'))
 
-    @patch('rawblock_io._backing_file.subprocess.run')
-    @patch('rawblock_io._backing_file.plistlib.loads')
+    @patch('rawblock_io._resolve_darwin.subprocess.run')
+    @patch('rawblock_io._resolve_darwin.plistlib.loads')
     def test_resolve_darwin_success(self, mock_plist, mock_run):
         mock_run.return_value.returncode = 0
         mock_plist.return_value = {
@@ -64,21 +64,21 @@ class TestBackingFileStrategy(unittest.TestCase):
         result = s._resolve_darwin('/dev/disk3s1')
         self.assertEqual(result, '/tmp/test.dmg')
 
-    @patch('rawblock_io._backing_file.subprocess.run')
+    @patch('rawblock_io._resolve_darwin.subprocess.run')
     def test_resolve_darwin_hdiutil_fails(self, mock_run):
         mock_run.return_value.returncode = 1
         s = BackingFileStrategy()
         self.assertIsNone(s._resolve_darwin('/dev/disk3s1'))
 
-    @patch('rawblock_io._backing_file.subprocess.run')
-    @patch('rawblock_io._backing_file.plistlib.loads')
+    @patch('rawblock_io._resolve_darwin.subprocess.run')
+    @patch('rawblock_io._resolve_darwin.plistlib.loads')
     def test_resolve_darwin_image_not_dict(self, mock_plist, mock_run):
         mock_run.return_value.returncode = 0
         mock_plist.return_value = {'images': ['not-a-dict']}
         s = BackingFileStrategy()
         self.assertIsNone(s._resolve_darwin('/dev/disk3s1'))
 
-    @patch('rawblock_io._backing_file.subprocess.run', side_effect=OSError)
+    @patch('rawblock_io._resolve_darwin.subprocess.run', side_effect=OSError)
     def test_resolve_darwin_exception(self, _mock):
         s = BackingFileStrategy()
         self.assertIsNone(s._resolve_darwin('/dev/disk3s1'))
