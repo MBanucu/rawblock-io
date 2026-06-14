@@ -9,6 +9,7 @@ description = "Raw block device I/O with automatic strategy fallback and cross-p
 readme = "README.md"
 license = { text = "GPL-3.0-only" }
 requires-python = ">=3.10"
+dependencies = ["mount-resolve>=0.1.0"]
 authors = [{ name = "Michael Banucu", email = "michael.banucu@googlemail.com" }]
 classifiers = [
     "Development Status :: 4 - Beta",

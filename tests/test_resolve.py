@@ -1,9 +1,9 @@
 from unittest.mock import patch, MagicMock
 
 from rawblock_io import resolve_device, resolve_mount_point, resolve
-from rawblock_io._resolve import _df_output
+from mount_resolve._resolve import _df_output
 
-import rawblock_io
+import mount_resolve
 
 import os
 import shutil
@@ -51,19 +51,19 @@ class TestUnifiedResolve(unittest.TestCase):
         self.assertGreater(len(dev), 0)
         self.assertGreater(len(mp), 0)
 
-    @patch('rawblock_io._resolve.resolve_device', return_value=None)
+    @patch('mount_resolve._resolve.resolve_device', return_value=None)
     def test_resolve_no_device_returns_none(self, _mock):
         self.assertIsNone(resolve('/'))
 
-    @patch('rawblock_io._resolve.resolve_mount_point', return_value=None)
+    @patch('mount_resolve._resolve.resolve_mount_point', return_value=None)
     def test_resolve_no_mount_returns_none(self, _mock):
         self.assertIsNone(resolve('/'))
 
 
 class TestResolveLinux(unittest.TestCase):
-    @patch('rawblock_io._resolve_linux.os.readlink', return_value='../../devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda/sda1')
+    @patch('mount_resolve._resolve_linux.os.readlink', return_value='../../devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda/sda1')
     @patch('builtins.open')
-    @patch('rawblock_io._resolve_linux.os.stat')
+    @patch('mount_resolve._resolve_linux.os.stat')
     def test_resolve_device_fallback_sysfs(self, mock_stat, mock_open, _mock_readlink):
         mock_stat.return_value.st_dev = os.makedev(8, 1)
         mock_file = MagicMock()
@@ -72,13 +72,13 @@ class TestResolveLinux(unittest.TestCase):
             '   1       0   819200 sda\n',
         ])
         mock_open.return_value.__enter__.return_value = mock_file
-        from rawblock_io._resolve_linux import resolve_device
+        from mount_resolve._resolve_linux import resolve_device
         dev = resolve_device('/')
         self.assertEqual(dev, '/dev/sda1')
 
-    @patch('rawblock_io._resolve_linux.os.readlink', side_effect=OSError)
+    @patch('mount_resolve._resolve_linux.os.readlink', side_effect=OSError)
     @patch('builtins.open')
-    @patch('rawblock_io._resolve_linux.os.stat')
+    @patch('mount_resolve._resolve_linux.os.stat')
     def test_resolve_device_fallback_sysfs_fails(self, mock_stat, mock_open, _mock_readlink):
         mock_stat.return_value.st_dev = os.makedev(8, 1)
         mock_file = MagicMock()
@@ -87,47 +87,47 @@ class TestResolveLinux(unittest.TestCase):
             '   1       0   819200 sda\n',
         ])
         mock_open.return_value.__enter__.return_value = mock_file
-        from rawblock_io._resolve_linux import resolve_device
+        from mount_resolve._resolve_linux import resolve_device
         dev = resolve_device('/')
         self.assertIsNone(dev)
 
-    @patch('rawblock_io._resolve_linux.subprocess.run')
+    @patch('mount_resolve._resolve_linux.subprocess.run')
     def test_resolve_mount_point_findmnt_fails(self, mock_run):
         mock_run.return_value.returncode = 1
-        from rawblock_io._resolve_linux import resolve_mount_point
+        from mount_resolve._resolve_linux import resolve_mount_point
         self.assertIsNone(resolve_mount_point('/'))
 
 
 class TestResolveDarwin(unittest.TestCase):
-    @patch('rawblock_io._resolve_darwin.plistlib.loads')
-    @patch('rawblock_io._resolve_darwin.subprocess.run')
-    @patch('rawblock_io._resolve_darwin._df_output')
+    @patch('mount_resolve._resolve_darwin.plistlib.loads')
+    @patch('mount_resolve._resolve_darwin.subprocess.run')
+    @patch('mount_resolve._resolve_darwin._df_output')
     def test_resolve_device_returns_backing(self, mock_df, mock_run, _mock_plist):
         mock_df.return_value = ('/dev/disk3s1', '/Volumes/MyDisk', 'hfs')
         mock_run.return_value.returncode = 0
-        with patch.object(rawblock_io._resolve_darwin, '_resolve_backing_file_darwin',
+        with patch.object(mount_resolve._resolve_darwin, '_resolve_backing_file_darwin',
                           return_value='/tmp/test.dmg'):
             with patch('os.path.isfile', return_value=True):
-                from rawblock_io._resolve_darwin import resolve_device
+                from mount_resolve._resolve_darwin import resolve_device
                 dev = resolve_device('/Volumes/MyDisk')
                 self.assertEqual(dev, '/tmp/test.dmg')
 
-    @patch('rawblock_io._resolve_darwin.subprocess.run')
+    @patch('mount_resolve._resolve_darwin.subprocess.run')
     def test_resolve_backing_file_hdiutil_fails(self, mock_run):
         mock_run.return_value.returncode = 1
-        from rawblock_io._resolve_darwin import _resolve_backing_file_darwin
+        from mount_resolve._resolve_darwin import _resolve_backing_file_darwin
         self.assertIsNone(_resolve_backing_file_darwin('/dev/disk3s1'))
 
-    @patch('rawblock_io._resolve_darwin.plistlib.loads')
-    @patch('rawblock_io._resolve_darwin.subprocess.run')
+    @patch('mount_resolve._resolve_darwin.plistlib.loads')
+    @patch('mount_resolve._resolve_darwin.subprocess.run')
     def test_resolve_backing_file_image_not_dict(self, mock_run, mock_plist):
         mock_run.return_value.returncode = 0
         mock_plist.return_value = {'images': ['not-a-dict', {}]}
-        from rawblock_io._resolve_darwin import _resolve_backing_file_darwin
+        from mount_resolve._resolve_darwin import _resolve_backing_file_darwin
         self.assertIsNone(_resolve_backing_file_darwin('/dev/disk3s1'))
 
-    @patch('rawblock_io._resolve_darwin.plistlib.loads')
-    @patch('rawblock_io._resolve_darwin.subprocess.run')
+    @patch('mount_resolve._resolve_darwin.plistlib.loads')
+    @patch('mount_resolve._resolve_darwin.subprocess.run')
     def test_resolve_backing_file_no_match(self, mock_run, mock_plist):
         mock_run.return_value.returncode = 0
         mock_plist.return_value = {
@@ -136,16 +136,16 @@ class TestResolveDarwin(unittest.TestCase):
                 'system-entities': [{'dev-entry': '/dev/disk4s1'}],
             }],
         }
-        from rawblock_io._resolve_darwin import _resolve_backing_file_darwin
+        from mount_resolve._resolve_darwin import _resolve_backing_file_darwin
         self.assertIsNone(_resolve_backing_file_darwin('/dev/disk3s1'))
 
-    @patch('rawblock_io._resolve_darwin.subprocess.run', side_effect=OSError)
+    @patch('mount_resolve._resolve_darwin.subprocess.run', side_effect=OSError)
     def test_resolve_backing_file_exception(self, _mock):
-        from rawblock_io._resolve_darwin import _resolve_backing_file_darwin
+        from mount_resolve._resolve_darwin import _resolve_backing_file_darwin
         self.assertIsNone(_resolve_backing_file_darwin('/dev/disk3s1'))
 
-    @patch('rawblock_io._resolve_darwin.plistlib.loads')
-    @patch('rawblock_io._resolve_darwin.subprocess.run')
+    @patch('mount_resolve._resolve_darwin.plistlib.loads')
+    @patch('mount_resolve._resolve_darwin.subprocess.run')
     def test_resolve_backing_file_success(self, mock_run, mock_plist):
         mock_run.return_value.returncode = 0
         mock_plist.return_value = {
@@ -154,59 +154,59 @@ class TestResolveDarwin(unittest.TestCase):
                 'system-entities': [{'dev-entry': '/dev/disk3s1'}],
             }],
         }
-        from rawblock_io._resolve_darwin import _resolve_backing_file_darwin
+        from mount_resolve._resolve_darwin import _resolve_backing_file_darwin
         result = _resolve_backing_file_darwin('/dev/disk3s1')
         self.assertEqual(result, '/tmp/test.dmg')
 
-    @patch('rawblock_io._resolve_darwin._df_output', return_value=None)
+    @patch('mount_resolve._resolve_darwin._df_output', return_value=None)
     def test_resolve_device_df_returns_none(self, _mock_df):
-        from rawblock_io._resolve_darwin import resolve_device
+        from mount_resolve._resolve_darwin import resolve_device
         self.assertIsNone(resolve_device('/tmp'))
 
-    @patch('rawblock_io._resolve_darwin._resolve_backing_file_darwin', return_value=None)
-    @patch('rawblock_io._resolve_darwin._df_output')
+    @patch('mount_resolve._resolve_darwin._resolve_backing_file_darwin', return_value=None)
+    @patch('mount_resolve._resolve_darwin._df_output')
     def test_resolve_device_no_backing(self, mock_df, _mock_backing):
         mock_df.return_value = ('/dev/disk3s1', '/Volumes/MyDisk', 'hfs')
-        from rawblock_io._resolve_darwin import resolve_device
+        from mount_resolve._resolve_darwin import resolve_device
         dev = resolve_device('/Volumes/MyDisk')
         self.assertEqual(dev, '/dev/disk3s1')
 
-    @patch('rawblock_io._resolve_darwin._df_output')
+    @patch('mount_resolve._resolve_darwin._df_output')
     def test_resolve_mount_point(self, mock_df):
         mock_df.return_value = ('/dev/disk3s1', '/Volumes/MyDisk', 'hfs')
-        from rawblock_io._resolve_darwin import resolve_mount_point
+        from mount_resolve._resolve_darwin import resolve_mount_point
         mp = resolve_mount_point('/Volumes/MyDisk')
         self.assertEqual(mp, '/Volumes/MyDisk')
 
-    @patch('rawblock_io._resolve_darwin._df_output', return_value=None)
+    @patch('mount_resolve._resolve_darwin._df_output', return_value=None)
     def test_resolve_mount_point_df_returns_none(self, _mock_df):
-        from rawblock_io._resolve_darwin import resolve_mount_point
+        from mount_resolve._resolve_darwin import resolve_mount_point
         self.assertIsNone(resolve_mount_point('/Volumes/MyDisk'))
 
 
 class TestDfOutput(unittest.TestCase):
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Darwin')
     def test_darwin_df_fails(self, mock_run):
         mock_run.return_value.returncode = 1
         self.assertIsNone(_df_output('/'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Darwin')
     def test_darwin_df_few_lines(self, mock_run):
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = 'header\n'
         self.assertIsNone(_df_output('/'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Darwin')
     def test_darwin_df_few_parts(self, mock_run):
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = 'Filesystem  Size\n/dev/disk1 1G\n'
         self.assertIsNone(_df_output('/'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Darwin')
     def test_darwin_df_stat_fails(self, mock_run):
         mock_run.side_effect = [
             MagicMock(returncode=0, stdout=(
@@ -218,8 +218,8 @@ class TestDfOutput(unittest.TestCase):
         result = _df_output('/')
         self.assertEqual(result, ('/dev/disk1s1', '/', ''))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Darwin')
     def test_darwin_df_success(self, mock_run):
         mock_run.side_effect = [
             MagicMock(returncode=0, stdout=(
@@ -231,28 +231,28 @@ class TestDfOutput(unittest.TestCase):
         result = _df_output('/')
         self.assertEqual(result, ('/dev/disk1s1', '/', 'apfs'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Linux')
     def test_linux_df_fails(self, mock_run):
         mock_run.return_value.returncode = 1
         self.assertIsNone(_df_output('/'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Linux')
     def test_linux_df_few_lines(self, mock_run):
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = 'header\n'
         self.assertIsNone(_df_output('/'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Linux')
     def test_linux_df_few_cols(self, mock_run):
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = 'header\ncol1 col2\n'
         self.assertIsNone(_df_output('/'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Linux')
     def test_linux_df_success(self, mock_run):
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = (
@@ -262,26 +262,26 @@ class TestDfOutput(unittest.TestCase):
         result = _df_output('/')
         self.assertEqual(result, ('/dev/sda1', '/', 'ext4'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Linux')
     def test_subprocess_file_not_found(self, mock_run):
         mock_run.side_effect = FileNotFoundError
         self.assertIsNone(_df_output('/'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Linux')
     def test_subprocess_os_error(self, mock_run):
         mock_run.side_effect = OSError
         self.assertIsNone(_df_output('/'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Linux')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Linux')
     def test_subprocess_timeout(self, mock_run):
         mock_run.side_effect = subprocess.TimeoutExpired(['df', '/'], 5)
         self.assertIsNone(_df_output('/'))
 
-    @patch('rawblock_io._resolve.subprocess.run')
-    @patch('rawblock_io._resolve.SYSTEM', 'Darwin')
+    @patch('mount_resolve._resolve.subprocess.run')
+    @patch('mount_resolve._resolve.SYSTEM', 'Darwin')
     def test_darwin_subprocess_file_not_found(self, mock_run):
         mock_run.side_effect = FileNotFoundError
         self.assertIsNone(_df_output('/'))
