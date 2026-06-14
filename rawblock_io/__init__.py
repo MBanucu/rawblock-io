@@ -24,7 +24,7 @@ from rawblock_io._strategies import (
     _try_pwrite,
 )
 from rawblock_io._io import RawBlockIO
-from rawblock_io._resolve import resolve_device, resolve_mount_point, _df_output, resolve
+from mount_resolve import resolve_device, resolve_mount_point, _df_output, resolve
 
 __all__ = [
     'IOStrategy',

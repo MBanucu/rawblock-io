@@ -2,6 +2,7 @@
   lib
 , buildPythonPackage
 , setuptools
+, mount-resolve
 , src
 }:
 buildPythonPackage rec {
@@ -12,6 +13,7 @@ buildPythonPackage rec {
   inherit src;
 
   nativeBuildInputs = [ setuptools ];
+  propagatedBuildInputs = [ mount-resolve ];
 
   doCheck = false;
   pythonImportsCheck = [ "rawblock_io" ];
