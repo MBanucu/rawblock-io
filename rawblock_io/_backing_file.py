@@ -5,7 +5,6 @@ import platform
 import subprocess
 
 from rawblock_io._strategies import IOStrategy, _try_pread, _try_pwrite
-from rawblock_io._resolve_darwin import _resolve_backing_file_darwin
 
 
 class BackingFileStrategy(IOStrategy):
@@ -48,6 +47,7 @@ class BackingFileStrategy(IOStrategy):
         return None
 
     def _resolve_darwin(self, device: str) -> str | None:
+        from rawblock_io._resolve_darwin import _resolve_backing_file_darwin
         return _resolve_backing_file_darwin(device)
 
     def read(self, device: str, offset: int, size: int) -> bytes | None:
