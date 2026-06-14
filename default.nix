@@ -19,7 +19,7 @@ buildPythonPackage rec {
   pythonImportsCheck = [ "rawblock_io" ];
 
   meta = with lib; {
-    description = "Raw block device I/O with automatic strategy fallback and cross-platform device/mount resolution";
+    description = "Raw block device I/O with automatic strategy fallback";
     homepage = "https://github.com/MBanucu/rawblock-io";
     license = licenses.gpl3Only;
     maintainers = with maintainers; [ ];

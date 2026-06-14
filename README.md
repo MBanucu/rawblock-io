@@ -12,8 +12,7 @@
 [![Downloads/month](https://pepy.tech/badge/rawblock-io/month)](https://pepy.tech/project/rawblock-io)
 [![Downloads/week](https://pepy.tech/badge/rawblock-io/week)](https://pepy.tech/project/rawblock-io)
 
-Raw block device I/O with automatic strategy fallback and cross-platform
-device/mount point resolution.
+Raw block device I/O with automatic strategy fallback.
 
 ## Features
 
@@ -24,15 +23,12 @@ device/mount point resolution.
 - **`BackingFileStrategy`** — resolves loop-device backing files (`/sys/block`,
   `losetup`, or `hdiutil` on macOS)
 - **`DDStrategy`** — `sudo dd` fallback for physical block devices
-- **`resolve_device`** — find the underlying block device for any file path
-  (Linux `/proc/partitions` + `/sys/dev/block`, macOS `hdiutil`)
-- **`resolve_mount_point`** — find the mount point for any file path
-  (Linux `findmnt`, macOS `df`)
 
 ## Quick start
 
 ```python
-from rawblock_io import RawBlockIO, resolve_device
+from rawblock_io import RawBlockIO
+from mount_resolve import resolve_device
 
 io = RawBlockIO()
 device = resolve_device('/some/file')

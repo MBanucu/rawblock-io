@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "rawblock-io"
 version = "0.2.0"
-description = "Raw block device I/O with automatic strategy fallback and cross-platform device/mount resolution"
+description = "Raw block device I/O with automatic strategy fallback"
 readme = "README.md"
 license = { text = "GPL-3.0-only" }
 requires-python = ">=3.10"
