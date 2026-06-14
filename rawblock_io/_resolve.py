@@ -55,3 +55,21 @@ def _df_output(path: str) -> tuple[str, str, str] | None:
 _mod = importlib.import_module(f'._resolve_{SYSTEM.lower()}', __package__)
 resolve_device = _mod.resolve_device
 resolve_mount_point = _mod.resolve_mount_point
+
+
+def resolve(path: str) -> tuple[str, str, str] | None:
+    """Return ``(device, mount_point, fstype)`` for *path*.
+
+    Combines :func:`resolve_device`, :func:`resolve_mount_point`, and
+    :func:`_df_output` into a single call so callers don't need to import
+    three separate functions.
+    """
+    df_info = _df_output(path)
+    fstype = df_info[2] if df_info else ''
+    dev = resolve_device(path)
+    if dev is None:
+        return None
+    mp = resolve_mount_point(path)
+    if mp is None:
+        return None
+    return dev, mp, fstype
