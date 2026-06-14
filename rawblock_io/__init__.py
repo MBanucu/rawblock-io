@@ -1,11 +1,9 @@
 """Raw block device I/O with automatic strategy fallback.
 
 Provides a pluggable I/O strategy chain for reading/writing raw block
-devices and disk image files, along with cross-platform device and
-mount-point resolution.
+devices and disk image files.
 
 Layers (one file per layer):
-  ``_resolve``     — Block device / mount point resolution
   ``_strategies``  — Pluggable I/O strategy base class & helpers
   ``_direct_io``   — ``DirectIOStrategy``
   ``_backing_file`` — ``BackingFileStrategy``
@@ -24,8 +22,6 @@ from rawblock_io._strategies import (
     _try_pwrite,
 )
 from rawblock_io._io import RawBlockIO
-from mount_resolve import resolve_device, resolve_mount_point, _df_output, resolve
-
 __all__ = [
     'IOStrategy',
     'DirectIOStrategy',
@@ -36,8 +32,4 @@ __all__ = [
     '_try_pread',
     '_try_pwrite',
     'RawBlockIO',
-    'resolve_device',
-    'resolve_mount_point',
-    '_df_output',
-    'resolve',
 ]
