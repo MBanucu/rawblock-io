@@ -20,10 +20,10 @@
         };
       in
       {
-        packages.default = pkgs.rawblock-io;
+        packages.default = pkgs.python3.pkgs.rawblock-io;
 
         devShells.default = pkgs.mkShell {
-          inputsFrom = [ pkgs.rawblock-io ];
+          inputsFrom = [ pkgs.python3.pkgs.rawblock-io ];
           packages = [ pkgs.python3 ];
           shellHook = ''
             echo "rawblock-io dev shell. Run tests:"
@@ -36,6 +36,11 @@
       overlays.default = final: prev: {
         rawblock-io = final.python3.pkgs.callPackage ./default.nix {
           src = final.lib.cleanSource ./.;
+        };
+        python3 = prev.python3.override {
+          packageOverrides = _: _: {
+            inherit (final) rawblock-io;
+          };
         };
       };
     };
